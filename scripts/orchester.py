@@ -7,7 +7,7 @@ from pathlib import Path
 import pygame
 
 from .const import Colors, Fonts, Paths, Sizes, Positions
-from .helpers import get_metadata, time_to_str, str_to_time
+from .helpers import get_metadata, time_to_str, str_to_time, convert_cover
 from .ui_elements import CheckBox, MetadataTag, TextField
 from .audio_elements import MusicPlayer, SoundWave, ScrubBar, Equalizer
 
@@ -165,7 +165,9 @@ class Orchestrator:
         elif event.type == pygame.DROPFILE:
             path = Path(event.file)
             if self.initialized and path.suffix in (".jpg", ".jpeg", ".bmp", ".png", ".gif"):
-                self.metadata["cover_art"] = pygame.image.load(path)
+                image, image_blur = convert_cover(path)
+                self.metadata["cover_art"] = image
+                self.metadata["cover_art_blur"] = image_blur
                 self.convert_cover()
             else:
                 return Orchestrator(self.window, Path(event.file))

@@ -40,6 +40,7 @@ class SVGs:
 @dataclass
 class Sizes:
     window = pygame.Vector2(500, 900)
+    blur_radius = 10            # gaussian image blur radius
     background_fade = 10        # amount of pixels to fade background to alpha 0
     soundwave_height = 100      # amount of pixels
     scrubbar_height = 50        # amount of pixels

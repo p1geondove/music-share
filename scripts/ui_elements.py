@@ -1,6 +1,5 @@
 import string
 
-from numpy import select
 import pygame
 
 from .const import Colors, Fonts, Sizes

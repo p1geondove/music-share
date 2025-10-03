@@ -5,10 +5,8 @@ import pygame
 from tinytag import TinyTag
 from PIL import Image, ImageFilter
 
-# from .ntimer import timer
-from .const import Paths
+from .const import Paths, Sizes
 
-# @timer
 def get_metadata(file_path: Path) -> dict:
     """Extract metadata from any supported audio file.
     Returns a dictionary with keys:
@@ -20,23 +18,11 @@ def get_metadata(file_path: Path) -> dict:
     image_blur = None
 
     if image:
-        pil_image = Image.open(BytesIO(image.data))
-        pil_image_blur = pil_image.filter(ImageFilter.GaussianBlur(radius=10))
-
-        if pil_image.mode == "RGB":
-            format = "RGB"
-        elif pil_image.mode == "RGBA":
-            format = "RGBA"
-        else:
-            pil_image = pil_image.convert("RGB")
-            pil_image_blur = pil_image_blur.convert("RGB")
-            format = "RGB"
-
-        image = pygame.image.frombytes(pil_image.tobytes(), pil_image.size, format)
-        image_blur = pygame.image.frombytes(pil_image_blur.tobytes(), pil_image_blur.size, format)
+        image, image_blur = convert_cover(image.data)
 
     duration = time_to_str(tag.duration) if tag.duration else None
-    bitrate = f"{tag.bitrate:.0f} kbps"
+    bitrate = f"{tag.bitrate:.1f} kbps" if tag.bitrate else None
+
 
     return {
         "title": tag.title,
@@ -50,6 +36,30 @@ def get_metadata(file_path: Path) -> dict:
         "cover_art": image,
         "cover_art_blur": image_blur
     }
+
+def convert_cover(cover:Path|bytes|str):
+    if isinstance(cover, bytes):
+        image = Image.open(BytesIO(cover))
+    elif isinstance(cover, Path):
+        image = Image.open(cover)
+    elif isinstance(cover, str):
+        image = Image.open(cover)
+    else:
+        raise TypeError
+
+    if image.mode == "RGB":
+        format = "RGB"
+    elif image.mode == "RGBA":
+        format = "RGBA"
+    else:
+        image.convert("RGB")
+        format = "RGB"
+
+    image_blur = image.filter(ImageFilter.GaussianBlur(radius=Sizes.blur_radius))
+    image = pygame.image.frombytes(image.tobytes(), image.size, format)
+    image_blur = pygame.image.frombytes(image_blur.tobytes(), image_blur.size, format)
+
+    return image, image_blur
 
 def mkdirs():
     Paths.images.mkdir(parents=True, exist_ok=True)

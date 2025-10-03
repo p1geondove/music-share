@@ -2,14 +2,13 @@ import pygame
 
 from scripts.orchester import Orchestrator
 from scripts.helpers import mkdirs
+from scripts.const import Sizes
 
 def main():
     pygame.mixer.init()
     pygame.font.init()
 
-    width = 500
-    height = 900
-    window = pygame.display.set_mode((width, height), pygame.SRCALPHA)
+    window = pygame.display.set_mode(Sizes.window, pygame.SRCALPHA)
     clock = pygame.Clock()
 
     mkdirs()

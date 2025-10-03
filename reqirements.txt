@@ -2,3 +2,4 @@ numpy
 pygame-ce
 soundfile
 tinytag
+pillow
