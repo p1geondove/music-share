@@ -1,6 +1,6 @@
 import pygame
 
-from scripts.audio_elements import Orchestrator
+from scripts.orchester import Orchestrator
 from scripts.helpers import mkdirs
 
 def main():
@@ -9,7 +9,7 @@ def main():
 
     width = 500
     height = 900
-    window = pygame.display.set_mode((width, height))
+    window = pygame.display.set_mode((width, height), pygame.SRCALPHA)
     clock = pygame.Clock()
 
     mkdirs()

@@ -29,11 +29,14 @@ def get_metadata(file_path: Path) -> dict:
             format = "RGBA"
         else:
             pil_image = pil_image.convert("RGB")
+            pil_image_blur = pil_image_blur.convert("RGB")
             format = "RGB"
 
         image = pygame.image.frombytes(pil_image.tobytes(), pil_image.size, format)
         image_blur = pygame.image.frombytes(pil_image_blur.tobytes(), pil_image_blur.size, format)
 
+    duration = time_to_str(tag.duration) if tag.duration else None
+    bitrate = f"{tag.bitrate:.0f} kbps"
 
     return {
         "title": tag.title,
@@ -41,9 +44,9 @@ def get_metadata(file_path: Path) -> dict:
         "album": tag.album,
         "genre": tag.genre,
         "date": tag.year,
-        "duration": tag.duration,
+        "duration": duration,
         "sample_rate": tag.samplerate,
-        "bitrate": tag.bitrate,
+        "bitrate": bitrate,
         "cover_art": image,
         "cover_art_blur": image_blur
     }
@@ -52,3 +55,19 @@ def mkdirs():
     Paths.images.mkdir(parents=True, exist_ok=True)
     Paths.tmp_audio.parent.mkdir(parents=True, exist_ok=True)
     Paths.video_output.mkdir(parents=True, exist_ok=True)
+
+def time_to_str(seconds:float) -> str:
+    """ formats a float in seconds to minutes and seconds string """
+    min = int(seconds / 60)
+    sec = int(seconds % 60)
+    ms = int(seconds % 1 * 1000)
+    return f"{min}:{sec:02d}.{ms:03d}"
+
+def str_to_time(string:str) -> float|None:
+    """ basically inverse of time_to_str """
+    try:
+        min, rest = string.split(":")
+        sec, ms = rest.split(".")
+        return int(min)*60 + int(sec) + float(ms)/1000
+    except:
+        return
