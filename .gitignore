@@ -4,3 +4,4 @@ tmp
 .python-version
 pyproject.toml
 uv.lock
+scripts/ntimer.py
