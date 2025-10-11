@@ -49,14 +49,17 @@ class CheckBox():
                 return True
 
 class TextField():
-    def __init__(self, pos:tuple[int,int]|pygame.Vector2, text:str = '', background = False):
+    def __init__(self, pos:tuple[int,int]|pygame.Vector2, text:str = '', background = False, font = None):
         if isinstance(pos, tuple):
             self.pos = int(pos[0]), int(pos[1])
         elif isinstance(pos, pygame.Vector2):
             self.pos = int(pos.x), int(pos.y)
         else:
             self.pos = 0, 0
-        self.font = Fonts.medium
+        if font is None:
+            self.font = Fonts.medium
+        else:
+            self.font = font
         self.active = False
         self.text = str(text)
         self.hover = False
@@ -165,8 +168,11 @@ class TextField():
                 special_events.append('draw')
                 special_events.append('text_changed')
 
-            elif event.key == pygame.K_RETURN:
-                special_events.append('textfield_return')
+            elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
+                if self.active:
+                    self.active = False
+                    self.draw()
+                    special_events.append('textfield_return')
 
             elif event.key == pygame.K_LEFT:
                 start_pos = self.cursorspos
@@ -296,52 +302,62 @@ class TextField():
             return self.cursorspos - dx
 
 class MetadataTag:
-    def __init__(self, pos:tuple[int,int], txt:str) -> None:
-        self.pos = pos
+    def __init__(self, pos:tuple[int,int], txt:str, checkbox=True, font_size = 24) -> None:
+        self.pos = pos # position of the element
+        self.show_checkbox = checkbox # bool to determine if checkbox is being drawn
 
-        pos_textbox = pos[0]+Sizes.meta_tag_margin, pos[1]+Sizes.meta_tag_margin
-        self.textbox = TextField(pos_textbox, txt)
+        pos_textbox = pos[0]+Sizes.meta_tag_margin, pos[1]+Sizes.meta_tag_margin # position relative to self.surface
+        font = Fonts.custom(font_size)
+        self.textbox = TextField(pos_textbox, txt, font=font) # texfield element
 
-        height = self.textbox.rect.height
-        rect_checkbox = pygame.Rect(self.textbox.rect.right + Sizes.meta_tag_padding, Sizes.meta_tag_margin + pos[1], height, height)
-        self.checkbox = CheckBox(rect_checkbox)
+        height = self.textbox.rect.height # abundant variable for easier reading
+        rect_checkbox = pygame.Rect(self.textbox.rect.right + Sizes.meta_tag_padding, Sizes.meta_tag_margin + pos[1], height, height) # calculate where checkbox is inside self.surface
+        self.checkbox = CheckBox(rect_checkbox) # checkbox element
 
-        self.draw()
+        self.draw() # self.surface emerges here
 
+    def get_surface_size(self):
+        inner_size_x, inner_size_y = self.textbox.rect.size # first get the size of the elements
+        if self.show_checkbox: # if were also rendering checkbox
+            inner_size_x += Sizes.meta_tag_padding + self.checkbox.rect.width # grow x size by checkbox and padding
+        surface_size = inner_size_x + 2*Sizes.meta_tag_margin, inner_size_y + 2*Sizes.meta_tag_margin # lastly add the fade margin
+        return (inner_size_x, inner_size_y), surface_size
+    
+    def render_background(self, elements_size:tuple[int,int], surface_size:tuple[int,int]):
+        surface = pygame.Surface(surface_size, pygame.SRCALPHA) # make a new surface for the background
+        inner_pos = Sizes.meta_tag_margin, Sizes.meta_tag_margin # position for the constant color rect
+        pygame.draw.rect(surface, Colors.background_music_elements, (inner_pos, elements_size)) # draw constant color
+        colors = [Colors.background_music_elements.lerp((0,0,0,0),x/(Sizes.meta_tag_margin+1)) for x in range(1,Sizes.meta_tag_margin+1)] # calculate colors used for fade
 
-    def render_background(self, size:tuple[int,int], margin:int=Sizes.meta_tag_margin):
-        self.background = pygame.Surface(size, pygame.SRCALPHA)
-        inner_pos = margin, margin
-        inner_size = size[0] - 2*margin, size[1] - 2*margin
-        pygame.draw.rect(self.background, Colors.background_music_elements, (inner_pos, inner_size))
-        colors = [Colors.background_music_elements.lerp((0,0,0,0),x/(margin+1)) for x in range(1,margin+1)]
-
-        for x,c in enumerate(colors,1):
-            inv = margin - x
-            pos = inv, inv
-            rsize = size[0]-2*inv, size[1]-2*inv
-            pygame.draw.rect(self.background, c, (pos,rsize), 1, x)
+        for x,c in enumerate(colors,1): # loop over relative position and color
+            inv = Sizes.meta_tag_margin - x # invert the distance
+            rsize = surface_size[0]-2*inv, surface_size[1]-2*inv # rect size
+            pygame.draw.rect(surface, c, ((inv, inv), rsize), 1, x) # draw rounded rect with size and color
+        
+        return surface
 
     def draw(self):
-        checkbox_x = self.textbox.rect.width + Sizes.meta_tag_margin + Sizes.meta_tag_padding
-        checkbox_pos = checkbox_x, Sizes.meta_tag_margin
-        surface_size = checkbox_x + self.checkbox.rect.width + Sizes.meta_tag_margin, self.checkbox.rect.height + 2 * Sizes.meta_tag_margin
-        background_size = self.textbox.rect.width + 2 * Sizes.meta_tag_margin, self.textbox.rect.height + 2 * Sizes.meta_tag_margin
-        self.render_background(background_size)
-        self.surface = pygame.Surface(surface_size, pygame.SRCALPHA)
-        self.surface.blit(self.background, (0,0))
-        self.surface.blit(self.textbox.surface, (Sizes.meta_tag_margin,Sizes.meta_tag_margin))
-        self.surface.blit(self.checkbox.surface, checkbox_pos)
+        elements_size, surface_size = self.get_surface_size() # calculate how big the surface is
+        self.surface = pygame.Surface(surface_size, pygame.SRCALPHA) # reset self.surface to new size
+        background = self.render_background(elements_size, surface_size) # get background
+
+        self.surface.blit(background) # blit background
+        self.surface.blit(self.textbox.surface, (Sizes.meta_tag_margin,Sizes.meta_tag_margin)) # blit textfield to self.surface
+
+        if self.show_checkbox: # if we draw checkbox
+            checkbox_x = Sizes.meta_tag_margin + self.textbox.rect.width + Sizes.meta_tag_padding # calculate x pos next to the nex
+            checkbox_pos = checkbox_x, Sizes.meta_tag_margin # put x and y pos into tuple
+            self.surface.blit(self.checkbox.surface, checkbox_pos) # blit checkbox to self.surface
 
     def handle_event(self, event:pygame.Event):
-        updated = False
-        if self.textbox.handle_event(event):
-            self.checkbox.rect.x = self.textbox.rect.right + Sizes.meta_tag_padding
-            updated = True
+        updated = False # variable if either texfield of checkbox changed
 
-        if self.checkbox.handle_event(event):
-            updated = True
+        if self.textbox.handle_event(event): # if textfield changed
+            self.checkbox.rect.x = self.textbox.rect.right + Sizes.meta_tag_padding # change x position of checkbox (only for global click/handle_event, not drawing)
+            updated = True # check update flag
 
-        if updated:
-            self.draw()
+        if self.checkbox.handle_event(event): # if checkbox changed
+            updated = True # check update flag
 
+        if updated: # if update flag checked
+            self.draw() # redraw everything

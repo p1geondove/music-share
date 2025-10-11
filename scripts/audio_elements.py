@@ -4,7 +4,7 @@ from pathlib import Path
 import pygame
 import numpy as np
 
-from .const import Colors, Sizes, SVGs, Positions
+from .const import Colors, Sizes, SVGs, PositionsConst
 
 class MusicPlayer:
     def __init__(self, song_path:Path, autoplay=True, startpos=0.):
@@ -45,6 +45,12 @@ class MusicPlayer:
         self.beginnig = time.time() - self.current_time
         pygame.mixer_music.unpause()
 
+    def toggle_pause(self):
+        if self.playing:
+            self.pause()
+        else:
+            self.resume()
+
     def set_song(self, song_path:Path):
         pygame.mixer_music.load(song_path)
         self.beginnig = time.time()
@@ -53,7 +59,6 @@ class MusicPlayer:
 
 class ScrubBar:
     def __init__(self, rect:pygame.Rect, song_data:np.ndarray, sample_rate:int) -> None:
-        self.rect = rect
         self.song_data = song_data
         self.sample_rate = sample_rate
         self.song_length = len(song_data) / sample_rate
@@ -64,23 +69,21 @@ class ScrubBar:
         self.pressed_left = False
         self.pressed_right = False
 
-        self.calc_amplitudes()
-        self.background = self.render_background()
+        self.resize(rect)
 
-    def render_background(self) -> pygame.Surface:
-        surface = pygame.Surface(self.rect.size, pygame.SRCALPHA)
+    def render_background(self):
+        self.background = pygame.Surface(self.rect.size, pygame.SRCALPHA)
 
-        height_constant_color = self.rect.height - Sizes.background_fade
-        rect = (0, Sizes.background_fade, self.rect.width, height_constant_color)
-        pygame.draw.rect(surface, Colors.background_music_elements, rect)
+        fade_size = int(Sizes.background_fade * self.rect.height)
+        height_constant_color = self.rect.height - fade_size
+        fade_rect = (0, fade_size, self.rect.width, height_constant_color)
+        pygame.draw.rect(self.background, Colors.background_music_elements, fade_rect)
 
-        alpha_values = np.linspace(0, Colors.background_music_elements.a, Sizes.background_fade, dtype=int)
-        y_positions = range(Sizes.background_fade + 1)
+        alpha_values = np.linspace(0, Colors.background_music_elements.a, fade_size, dtype=int)
+        y_positions = range(fade_size + 1)
 
         for alpha, ypos in zip(alpha_values, y_positions):
-            pygame.draw.line(surface, (0,0,0,alpha), (0,ypos), (self.rect.right,ypos))
-
-        return surface
+            pygame.draw.line(self.background, (0,0,0,alpha), (0,ypos), (self.rect.right,ypos))
 
     def calc_amplitudes(self):
         self.bar_width = self.rect.width / Sizes.amount_bars - Sizes.bar_padding
@@ -99,8 +102,9 @@ class ScrubBar:
         blocks = [self.song_data[indices[i]:indices[i+1]] for i in range(Sizes.amount_bars)]
         amp = np.array([np.mean(np.abs(b)) if len(b) > 0 else 0 for b in blocks])
         amp = amp / np.max(amp) if np.max(amp) > 0 else amp
-        height = self.rect.height - Sizes.background_fade
-        self.amplitude = (Sizes.background_fade + height - height * amp).astype(int)
+        fade_size = self.rect.height * Sizes.background_fade
+        height = self.rect.height - fade_size
+        self.amplitude = (fade_size + height - height * amp).astype(int)
 
     def draw(self) -> tuple[pygame.Surface, tuple[int,int]]:
         surface = pygame.Surface(self.rect.size, pygame.SRCALPHA)
@@ -180,46 +184,76 @@ class ScrubBar:
 
         return special_events
 
-class SoundWave:
-    def __init__(self, rect:pygame.Rect, song_data:np.ndarray, sample_rate:int, amount_samples:int = 500) -> None:
+    def resize(self, rect:pygame.Rect):
         self.rect = rect
+        self.render_background()
+        self.calc_amplitudes()
+
+    def copy(self, rect:pygame.Rect):
+        new_scrubbar = object.__new__(ScrubBar)
+        new_scrubbar.song_data = self.song_data.copy()
+        new_scrubbar.sample_rate = self.sample_rate
+        new_scrubbar.song_length = self.song_length
+        new_scrubbar.current_time = self.current_time
+        new_scrubbar.start_pos = self.start_pos
+        new_scrubbar.end_pos = self.end_pos
+        new_scrubbar.resize(rect)
+        return new_scrubbar
+
+class SoundWave:
+    def __init__(self, rect:pygame.Rect, song_data:np.ndarray, sample_rate:int) -> None:
+        self.song_data_raw = song_data
         self.sample_rate = sample_rate
-        self.amount_samples = amount_samples
         self.song_length = len(song_data) / sample_rate
         self.clipping_data = np.abs(song_data) > 0.99
-        self.song_data = (song_data + 1) / 2 * (self.rect.height - Sizes.background_fade) # normalize and scale (-1, 1) to (0, height-background_fade)
         self.clipping_img = SVGs.clip
         self.clipping_enabled = True
-        self.background = self.render_background()
+        self.resize(rect)
 
-    def render_background(self) -> pygame.Surface:
-        surface = pygame.Surface(self.rect.size, pygame.SRCALPHA)
-
-        height_constant_color = self.rect.height - Sizes.background_fade
+    def render_background(self):
+        self.background = pygame.Surface(self.rect.size, pygame.SRCALPHA)
+        fade_size = int(Sizes.background_fade * self.rect.height)
+        height_constant_color = self.rect.height - fade_size
         rect = (0, 0, self.rect.width, height_constant_color)
-        pygame.draw.rect(surface, Colors.background_music_elements, rect)
-        alpha_values = np.linspace(Colors.background_music_elements.a, 0, Sizes.background_fade, dtype=int)
+        pygame.draw.rect(self.background, Colors.background_music_elements, rect)
+        alpha_values = np.linspace(Colors.background_music_elements.a, 0, fade_size, dtype=int)
         y_positions = range(height_constant_color, self.rect.height+1)
 
         for alpha, ypos in zip(alpha_values, y_positions):
-            pygame.draw.line(surface, (0,0,0,alpha), (0,ypos), (self.rect.right,ypos))
-
-        return surface
+            pygame.draw.line(self.background, (0,0,0,alpha), (0,ypos), (self.rect.right,ypos))
 
     def draw(self, position:float) -> tuple[pygame.Surface, tuple[int,int]]:
         surface = pygame.Surface(self.rect.size, pygame.SRCALPHA)
         surface.blit(self.background, (0,0))
 
-        start_pos = min(int(position * self.sample_rate), self.song_data.size - self.amount_samples - 1)
-        samples = self.song_data[start_pos : start_pos + self.amount_samples]
-        x_pos = np.arange(samples.size) * surface.width / self.amount_samples
+        start_pos = min(int(position * self.sample_rate), self.song_data.size - Sizes.soundwave_samples - 1)
+        samples = self.song_data[start_pos : start_pos + Sizes.soundwave_samples]
+        x_pos = np.arange(samples.size) * surface.width / Sizes.soundwave_samples
         points = np.stack((x_pos, samples), axis=1)
         pygame.draw.lines(surface, Colors.wave, False, points)
 
-        if np.any(self.clipping_data[start_pos : start_pos + self.amount_samples]) and self.clipping_enabled:
-            surface.blit(self.clipping_img, Positions.clipper)
+        if np.any(self.clipping_data[start_pos : start_pos + Sizes.soundwave_samples]) and self.clipping_enabled:
+            surface.blit(self.clipping_img, PositionsConst.clipper)
 
         return surface, self.rect.topleft
+    
+    def resize(self, rect:pygame.Rect):
+        self.rect = rect
+        self.render_background()
+        self.song_data = (self.song_data_raw + 1) / 2 * (self.rect.height - Sizes.background_fade * self.rect.height) # normalize and scale (-1, 1) to (0, height-background_fade)
+
+    def copy(self, rect:pygame.Rect):
+        new_soundwave = object.__new__(SoundWave)
+        new_soundwave.rect = rect
+        new_soundwave.song_data_raw = self.song_data_raw.copy()
+        new_soundwave.song_data = self.song_data.copy()
+        new_soundwave.sample_rate = self.sample_rate
+        new_soundwave.song_length = self.song_length
+        new_soundwave.clipping_data = self.clipping_data.copy()
+        new_soundwave.clipping_img = self.clipping_img.copy()
+        new_soundwave.clipping_enabled = self.clipping_enabled
+        new_soundwave.resize(rect)
+        return new_soundwave
 
 class Equalizer:
     def __init__(self, rect:pygame.Rect, song_data:np.ndarray, sample_rate:int):
@@ -227,11 +261,11 @@ class Equalizer:
         self.sample_rate = sample_rate
 
         # fft constants
-        freq_bands = np.geomspace(Sizes.fft_low_freq, Sizes.fft_high_freq, Sizes.amount_bars)
+        self.freq_bands = np.geomspace(Sizes.fft_low_freq, Sizes.fft_high_freq, Sizes.amount_bars)
         self.amount_windows = (len(song_data) - Sizes.fft_window_size) // Sizes.fft_hop_size + 1
         bin_freqs = np.fft.rfftfreq(Sizes.fft_window_size, 1/sample_rate)
-        target_bins = [np.argmin(np.abs(bin_freqs - f)) for f in freq_bands]
-        self.eq_data = np.zeros((self.amount_windows, len(freq_bands)))
+        target_bins = [np.argmin(np.abs(bin_freqs - f)) for f in self.freq_bands]
+        self.eq_data_raw = np.zeros((self.amount_windows, len(self.freq_bands)))
 
         # calculate fft
         for i in range(self.amount_windows):
@@ -239,18 +273,22 @@ class Equalizer:
             end = start + Sizes.fft_window_size
             window = song_data[start:end] * np.blackman(Sizes.fft_window_size)
             fft = np.fft.rfft(window)
-            self.eq_data[i,:] = np.abs(fft[target_bins])
+            self.eq_data_raw[i,:] = np.abs(fft[target_bins])
 
-        # normalize fft
-        self.eq_data = np.log10(self.eq_data+1e-10) # log that bish
-        self.eq_data = np.clip(self.eq_data / np.max(self.eq_data),0,1) * rect.height # normalize and scale to surface
+        self.resize(self.rect)
 
-        # drawing constants
-        self.bar_width = rect.width / len(freq_bands) - Sizes.bar_padding
-        self.bar_radius = self.bar_width / 2
-        self.x_positions = np.linspace(Sizes.bar_padding/2, rect.width-self.bar_width-Sizes.bar_padding, Sizes.amount_bars, dtype=int)
+    def render_background(self):
         self.background = pygame.Surface(self.rect.size, pygame.SRCALPHA)
         self.background.fill(Colors.background_music_elements)
+
+    def resize(self, rect:pygame.Rect):
+        self.rect = rect
+        self.eq_data = np.log10(self.eq_data_raw + 1e-10) # log that bish
+        self.eq_data = np.clip(self.eq_data / np.max(self.eq_data),0,1) * rect.height # normalize and scale to surface
+        self.bar_width = rect.width / len(self.freq_bands) - Sizes.bar_padding
+        self.bar_radius = self.bar_width / 2
+        self.x_positions = np.linspace(Sizes.bar_padding/2, rect.width-self.bar_width-Sizes.bar_padding, Sizes.amount_bars, dtype=int)
+        self.render_background()
 
     def draw(self, position:float) -> tuple[pygame.Surface, tuple[int,int]]:
         surface = pygame.Surface(self.rect.size, pygame.SRCALPHA)
@@ -263,4 +301,13 @@ class Equalizer:
             pygame.draw.rect(surface, Colors.bar_bright, (x,0,self.bar_width,val))
 
         return surface, self.rect.topleft
-
+    
+    def copy(self, rect:pygame.Rect):
+        new_eq = object.__new__(Equalizer)
+        new_eq.sample_rate = self.sample_rate
+        new_eq.freq_bands = self.freq_bands.copy()
+        new_eq.amount_windows = self.amount_windows
+        new_eq.eq_data_raw = self.eq_data_raw.copy()
+        new_eq.rect = rect
+        new_eq.resize(rect)
+        return new_eq
