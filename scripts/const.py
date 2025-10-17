@@ -1,3 +1,5 @@
+import os
+import sys
 from pathlib import Path
 from dataclasses import dataclass
 from typing import TypedDict
@@ -5,6 +7,18 @@ from typing import TypedDict
 import pygame
 
 pygame.font.init()
+
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 @dataclass
 class Colors:
@@ -23,18 +37,16 @@ class Colors:
 
 @dataclass
 class Paths:
-    images = Path("./tmp/images")                   # temporary images to be stiched together by ffmpeg
-    tmp_audio = Path("./tmp/audio/faded_audio.wav") # temporary audio file that has start and end faded
-    video_output = Path("./tmp/output")             # output folder of the rendered videos
+    images = Path(resource_path("tmp/images"))                      # temporary images to be stiched together by ffmpeg
+    tmp_audio = Path(resource_path("tmp/audio/faded_audio.wav"))    # temporary audio file that has start and end faded
+    video_output = Path(resource_path("tmp/output"))                # output folder of the rendered videos
 
 
 @dataclass
 class Fonts:
-    font_path = Path("./assets/AgaveNerdFontMono-Regular.ttf")  # font path...
-    small = pygame.Font(font_path, 12)                          # unused
-    medium = pygame.Font(font_path, 20)                         # unused i think
-    large = pygame.Font(font_path, 30)                          # also unused i think
-    custom = lambda x:pygame.Font(Fonts.font_path, x)           # used for probably everything...
+    font_path = Path(resource_path("assets/AgaveNerdFontMono-Regular.ttf")) # font path...
+    medium = pygame.Font(font_path, 20)                                     # used for time control emelents
+    custom = lambda x:pygame.Font(Fonts.font_path, x)                       # used for metadata tags and infos in the middle of the screen
 
 
 @dataclass
