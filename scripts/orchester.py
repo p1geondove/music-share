@@ -19,7 +19,8 @@ class Orchester:
 
         self.info_surface = window.copy()
         self.cover_surface = window.copy()
-    
+        self.cover_raw:Path|bytes|None = None
+
         self.music_player:MusicPlayer|None = None
         self.soundwave:SoundWave|None = None
         self.scrubbar:ScrubBar|None = None
@@ -58,6 +59,7 @@ class Orchester:
         self.draw_info("Exctracting metadata")
         self.metadata = get_metadata(song_path)
         self.draw_info("Converting cover")
+        self.cover_raw = self.metadata["cover_art"]
         self.cover_surface = convert_cover(self.metadata["cover_art"], self.window.size)
         self.draw_info("Reading song")
         self.song_data_full, self.sample_rate = sf.read(song_path)
@@ -130,7 +132,7 @@ class Orchester:
 
         positions = get_element_positions(Sizes.window_render)
 
-        orchester.cover_surface = convert_cover(self.metadata["cover_art"], Sizes.window_render)
+        orchester.cover_surface = convert_cover(self.cover_raw, Sizes.window_render)
         orchester.soundwave = self.soundwave.copy(positions["soundwave"])
         orchester.scrubbar = self.scrubbar.copy(positions["scrubbar"])
         orchester.equalizer = self.equalizer.copy(positions["eqalizer"])
@@ -205,6 +207,7 @@ class Orchester:
             if path.suffix in AllowedFileTypes.audio:
                 self.set_song(Path(event.file))
             elif path.suffix in AllowedFileTypes.image:
+                self.cover_raw = path
                 self.cover_surface = convert_cover(path, self.window.size)
 
         if not self.ready:
