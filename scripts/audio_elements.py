@@ -5,9 +5,7 @@ from pathlib import Path
 import pygame
 import numpy as np
 
-from scripts.helpers import get_element_positions
-
-from .const import Colors, Sizes, SVGs, PositionsConst
+from .const import Colors, Sizes, SVGs
 
 class MusicPlayer:
     def __init__(self, song_path:Path, autoplay=True, startpos=0.):

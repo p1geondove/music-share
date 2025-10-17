@@ -6,7 +6,6 @@ from scripts.const import Sizes
 def main():
     pygame.init()
     pygame.mixer.init()
-    pygame.font.init()
 
     window = pygame.display.set_mode(Sizes.window, pygame.SRCALPHA)
     clock = pygame.Clock()
