@@ -10,10 +10,7 @@ def main():
 
     window = pygame.display.set_mode(Sizes.window, pygame.SRCALPHA)
     clock = pygame.Clock()
-
     orchester = Orchester(window, None)
-    orchester.draw_info("removing old images")
-    tmp_cleanup()
 
     while True:
         for event in pygame.event.get():

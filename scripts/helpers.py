@@ -59,11 +59,11 @@ def convert_cover(cover:Path|bytes|str|None, size:tuple[int,int]):
     elif image.mode == "RGBA":
         format = "RGBA"
     else:
-        image.convert("RGB")
+        image = image.convert("RGB")
         format = "RGB"
 
     image_blur = image.filter(ImageFilter.GaussianBlur(radius=Sizes.blur_radius))
-    image = pygame.image.frombytes(image.tobytes(), image.size, format)
+    image = pygame.image.frombytes(image.tobytes(), image.size, format) #breaks here: ValueError: Bytes length does not equal format and resolution size
     image_blur = pygame.image.frombytes(image_blur.tobytes(), image_blur.size, format)
 
     cover_surface = pygame.Surface(size, pygame.SRCALPHA)

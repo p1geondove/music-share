@@ -7,7 +7,7 @@ from pathlib import Path
 import pygame
 
 from .const import Colors, Paths, Sizes, AllowedFileTypes
-from .helpers import get_metadata, time_to_str, str_to_time, convert_cover, fade_song, get_element_positions
+from .helpers import get_metadata, time_to_str, str_to_time, convert_cover, fade_song, get_element_positions, tmp_cleanup
 from .ui_elements import CheckBox, MetadataTag, TextField
 from .audio_elements import MusicPlayer, SoundWave, ScrubBar, Equalizer
 
@@ -27,6 +27,8 @@ class Orchester:
         self.tags:list[MetadataTag] = []
         self.resolution_textfield:TextField|None = None
         self.ready = False
+        self.draw_info("removing old images")
+        tmp_cleanup()
 
         if song_path:
             self.set_song(song_path)
@@ -43,7 +45,8 @@ class Orchester:
         pygame.display.flip()
 
     def set_song(self, song_path:Path):
-        if song_path.suffix not in {".mp3", ".wav", ".flac", ".opus"}:
+        if song_path.suffix not in AllowedFileTypes.audio:
+            print(song_path, " is not a acceptable audio file")
             return
         
         self.song_path = song_path
@@ -125,19 +128,13 @@ class Orchester:
         total_frames = int(dur * Sizes.render_framerate)
         out_path = (Paths.video_output / self.song_path.name).with_suffix(".mkv")
 
-
         positions = get_element_positions(Sizes.window_render)
 
-        orchester.song_data_full = self.song_data_full
         orchester.cover_surface = convert_cover(self.metadata["cover_art"], Sizes.window_render)
         orchester.soundwave = self.soundwave.copy(positions["soundwave"])
         orchester.scrubbar = self.scrubbar.copy(positions["scrubbar"])
         orchester.equalizer = self.equalizer.copy(positions["eqalizer"])
 
-        # orchester.equalizer = Equalizer(positions["eqalizer"], self.song_data_mono, self.sample_rate)
-        # orchester.soundwave = SoundWave(positions["soundwave"], self.song_data_mono, self.sample_rate)
-        # orchester.scrubbar = ScrubBar(positions["scrubbar"], self.song_data_mono, self.sample_rate)
-    
         idx = 0
         font_size = int(min(Sizes.window_render) / 25)
         for tag in self.tags:
@@ -209,10 +206,10 @@ class Orchester:
                 self.set_song(Path(event.file))
             elif path.suffix in AllowedFileTypes.image:
                 self.cover_surface = convert_cover(path, self.window.size)
-        
+
         if not self.ready:
             return
-        
+
         # handle text and checkbox from metadata tags, and also check if were typing
         typing = False
         for t in self.tags:
@@ -231,22 +228,25 @@ class Orchester:
         if "text_changed" in self.current_time_box.handle_event(event):
             time_pos = str_to_time(self.current_time_box.text)
             if time_pos:
-                self.scrubbar.current_time = time_pos
-                self.music_player.play_from_position(time_pos)
+                if 0 < time_pos < self.scrubbar.song_length:
+                    self.scrubbar.current_time = time_pos
+                    self.music_player.play_from_position(time_pos)
 
         # change scrub_bar when start_fade_box changes
         if "text_changed" in self.start_fade_box.handle_event(event):
             time_pos = str_to_time(self.start_fade_box.text)
             if time_pos:
-                self.scrubbar.start_pos = time_pos
-                self.fade()
+                if time_pos < self.scrubbar.end_pos - 2*Sizes.song_fade_time:
+                    self.scrubbar.start_pos = time_pos
+                    self.fade()
 
         # change scrub_bar when end_fade_box changes
         if "text_changed" in self.end_fade_box.handle_event(event):
             time_pos = str_to_time(self.end_fade_box.text)
             if time_pos:
-                self.scrubbar.end_pos = time_pos
-                self.fade()
+                if time_pos > self.scrubbar.start_pos + 2*Sizes.song_fade_time:
+                    self.scrubbar.end_pos = time_pos
+                    self.fade()
 
         # toggle clipper in scrubbar according to clipper checkbox
         if self.clipper_checkbox.handle_event(event):
@@ -283,12 +283,14 @@ class Orchester:
                 factor = Sizes.window_max_size / max(wanted_x, wanted_y)
                 preview_x = int(factor * wanted_x)
                 preview_y = int(factor * wanted_y)
-                self.resize((preview_x, preview_y))
+                small, big = sorted((preview_x, preview_y))
+                if big / small > Sizes.window_max_ratio:
+                    self.resize((preview_x, preview_y))
+                else:
+                    print("aspec ratio is a bit extreme no?")
             except Exception as e:
-                print("uncaught exception: ", e)
-                raise
-                pass
-            
+                print("cant read window size: ", e)
+ 
     def draw(self):
         if not self.ready and not self.render_state:
             self.draw_info("Drop in audiofile")

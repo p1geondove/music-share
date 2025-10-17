@@ -1,8 +1,11 @@
+from re import S
 import time
 from pathlib import Path
 
 import pygame
 import numpy as np
+
+from scripts.helpers import get_element_positions
 
 from .const import Colors, Sizes, SVGs, PositionsConst
 
@@ -86,9 +89,11 @@ class ScrubBar:
             pygame.draw.line(self.background, (0,0,0,alpha), (0,ypos), (self.rect.right,ypos))
 
     def calc_amplitudes(self):
-        self.bar_width = self.rect.width / Sizes.amount_bars - Sizes.bar_padding
+        self.bar_width = self.rect.width / Sizes.amount_bars * (1-Sizes.bar_padding)
+        #self.bar_width = self.rect.width / Sizes.amount_bars - Sizes.bar_padding
         self.bar_radius = self.bar_width / 2
-        self.x_positions = np.linspace(Sizes.bar_padding/2, self.rect.width - self.bar_width - Sizes.bar_padding, Sizes.amount_bars, dtype=int)
+        self.x_positions = np.linspace(0, self.rect.width - self.bar_width, Sizes.amount_bars, dtype=int)
+        #self.x_positions = np.linspace(Sizes.bar_padding/2, self.rect.width - self.bar_width - Sizes.bar_padding, Sizes.amount_bars, dtype=int)
 
         # Compute true time boundaries from audio
         total_samples = len(self.song_data)
@@ -206,7 +211,6 @@ class SoundWave:
         self.sample_rate = sample_rate
         self.song_length = len(song_data) / sample_rate
         self.clipping_data = np.abs(song_data) > 0.99
-        self.clipping_img = SVGs.clip
         self.clipping_enabled = True
         self.resize(rect)
 
@@ -233,7 +237,7 @@ class SoundWave:
         pygame.draw.lines(surface, Colors.wave, False, points)
 
         if np.any(self.clipping_data[start_pos : start_pos + Sizes.soundwave_samples]) and self.clipping_enabled:
-            surface.blit(self.clipping_img, PositionsConst.clipper)
+            surface.blit(self.clipping_img, self.clipping_pos)
 
         return surface, self.rect.topleft
     
@@ -241,6 +245,8 @@ class SoundWave:
         self.rect = rect
         self.render_background()
         self.song_data = (self.song_data_raw + 1) / 2 * (self.rect.height - Sizes.background_fade * self.rect.height) # normalize and scale (-1, 1) to (0, height-background_fade)
+        self.clipping_img = SVGs.clip(self.rect.height * Sizes.clipper_svg)
+        self.clipping_pos = self.rect.width * 0.01, (self.rect.height - Sizes.background_fade*self.rect.height) * 0.9
 
     def copy(self, rect:pygame.Rect):
         new_soundwave = object.__new__(SoundWave)
@@ -266,6 +272,9 @@ class Equalizer:
         bin_freqs = np.fft.rfftfreq(Sizes.fft_window_size, 1/sample_rate)
         target_bins = [np.argmin(np.abs(bin_freqs - f)) for f in self.freq_bands]
         self.eq_data_raw = np.zeros((self.amount_windows, len(self.freq_bands)))
+        #factor = np.linspace(0.1,1,Sizes.amount_bars)
+        factor = np.logspace(0.1,1,Sizes.amount_bars)
+
 
         # calculate fft
         for i in range(self.amount_windows):
@@ -273,7 +282,7 @@ class Equalizer:
             end = start + Sizes.fft_window_size
             window = song_data[start:end] * np.blackman(Sizes.fft_window_size)
             fft = np.fft.rfft(window)
-            self.eq_data_raw[i,:] = np.abs(fft[target_bins])
+            self.eq_data_raw[i,:] = np.abs(fft[target_bins]) * factor
 
         self.resize(self.rect)
 
@@ -285,9 +294,9 @@ class Equalizer:
         self.rect = rect
         self.eq_data = np.log10(self.eq_data_raw + 1e-10) # log that bish
         self.eq_data = np.clip(self.eq_data / np.max(self.eq_data),0,1) * rect.height # normalize and scale to surface
-        self.bar_width = rect.width / len(self.freq_bands) - Sizes.bar_padding
+        self.bar_width = rect.width / Sizes.amount_bars * (1 - Sizes.bar_padding)
         self.bar_radius = self.bar_width / 2
-        self.x_positions = np.linspace(Sizes.bar_padding/2, rect.width-self.bar_width-Sizes.bar_padding, Sizes.amount_bars, dtype=int)
+        self.x_positions = np.linspace(0, rect.width-self.bar_width, Sizes.amount_bars, dtype=int)
         self.render_background()
 
     def draw(self, position:float) -> tuple[pygame.Surface, tuple[int,int]]:

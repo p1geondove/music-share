@@ -37,9 +37,10 @@ class Fonts:
 
 @dataclass
 class Sizes:
-    window = 430, 900           # preview window size
+    window = 405, 900           # preview window size
     window_max_size = 900
-    window_render = 1280, 2700  # render window size
+    window_max_ratio = 0.35
+    window_render = 1080, 2400  # render window size
     blur_radius = 10            # gaussian image blur radius
     background_fade = 0.2       # factor of element height
     soundwave_height = 0.1      # factor of winheight
@@ -47,23 +48,23 @@ class Sizes:
     scrubbar_height = 0.05      # factor of winheight
     equalizer_height = 0.1      # factor of winheight
     render_framerate = 60       # fps for rendered video
-    fft_window_size = 12000     # amount of samples
+    fft_window_size = 10000     # amount of samples
     fft_hop_size = 1024         # amount of samples
-    fft_low_freq = 30           # lowest frequency for equalizer
+    fft_low_freq = 50           # lowest frequency for equalizer
     fft_high_freq = 16000       # highest frequency for equalizer
     song_fade_time = 1          # amount of seconds used for fading music
-    amount_bars = 70            # amount of bars for eq and scrub bar
-    bar_padding = 3             # amount of pixels in x between bars
+    amount_bars = 100           # amount of bars for eq and scrub bar
+    bar_padding = 0.15          # ratio of barwidth / gap
     text_selection_radius = 3   # edge radius for selection rect in TextField
     checkbox_width = 2          # width of the rect for checkbox
     checkbox_radius = 3         # radius of the rect for checkbox
     meta_tag_padding = 5        # amount of pixels in x bewteen text and checkbox
     meta_tag_margin = 4         # amount of pixels arround textfield for fading
-    clipper_svg = 25            # square size of clipper svg in pixels
+    clipper_svg = 0.2           # ratio of svg size (square) / soundwave_surface height
 
 @dataclass
 class SVGs:
-    clip = pygame.image.load_sized_svg("./assets/clipping.svg", (Sizes.clipper_svg,Sizes.clipper_svg))
+    clip = lambda x:pygame.image.load_sized_svg("./assets/clipping.svg", (x,x))
 
 @dataclass
 class AllowedFileTypes:
