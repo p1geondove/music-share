@@ -21,7 +21,7 @@ You can either go get binaries from [here](https://github.com/p1geondove/music-s
 As the arrow of time marches forward i highly suggest using a sophisticated project manager like astral/uv. [Installation](https://docs.astral.sh/uv/getting-started/installation/) of that is super simple, just one line in the terminal. Also you should use git to download the repo, but you can also download the project via your browser
 
 - clone repo (ssh preferred if you have that set up, https is fallback/deprecated)
-  - `git clone git@github.com:p1geondove/grav-sim.git`
+  - `git clone git@github.com:p1geondove/music-share.git`
   - `git clone https://github.com/p1geondove/music-share.git`
 - `cd music-share`
 - `uv init`

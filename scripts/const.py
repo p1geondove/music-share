@@ -80,7 +80,7 @@ class Sizes:
 
 @dataclass
 class SVGs:
-    clip = lambda x:pygame.image.load_sized_svg("./assets/clipping.svg", (x,x)) # made this a seperate class in case i add more images/svgs
+    clip = lambda x:pygame.image.load_sized_svg(resource_path("assets/clipping.svg"), (x,x)) # made this a seperate class in case i add more images/svgs
 
 
 @dataclass
