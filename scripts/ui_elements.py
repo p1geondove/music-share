@@ -97,7 +97,7 @@ class TextField():
             pygame.draw.rect(self.surface, color_text, (cursor_x, 2, 1, text.height-4)) # cursror line
 
         if draw_border:
-            pygame.draw.rect(self.surface, Colors.text_border, self.rect, 2, 3)
+            pygame.draw.rect(self.surface, Colors.text_background, self.rect, 2, 3)
 
         self.surface.blit(text, (0,0))
 

@@ -1,10 +1,10 @@
 import pygame
 
 from scripts.orchester import Orchester
-from scripts.helpers import tmp_cleanup
 from scripts.const import Sizes
 
 def main():
+    pygame.init()
     pygame.mixer.init()
     pygame.font.init()
 
@@ -19,7 +19,7 @@ def main():
         orchester.draw()
         pygame.display.flip()
         pygame.display.set_caption(f"{clock.get_fps():.0f}")
-        clock.tick()
+        clock.tick(Sizes.preview_fps)
 
 if __name__ == "__main__":
     main()

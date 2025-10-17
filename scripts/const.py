@@ -8,38 +8,41 @@ pygame.font.init()
 
 @dataclass
 class Colors:
-    background = pygame.Color("#151515")
-    background_music_elements = pygame.Color(0,0,0,150)
-    bar_bright = pygame.Color("#CCCCCC")
-    bar_dim = pygame.Color("#747474")
-    bar_dark = pygame.Color("#222222")
-    wave = pygame.Color("#E7E7E7")
-    text = pygame.Color("#EEEEEE")
-    text_selection = pygame.Color("#BF7F0F")
-    text_border = pygame.Color("#5A149C")
-    checkbox_border = pygame.Color(100,100,100,100)
-    checkbox_checkmark = pygame.Color("white")
+    background = pygame.Color("#151515")                # default background color
+    background_music_elements = pygame.Color(0,0,0,150) # trasnparent background for music elements
+    bar_bright = pygame.Color("#CCCCCC")                # bar color of equalizer and scrubbar left from current time pos
+    bar_dim = pygame.Color("#747474")                   # bar color of scrubbar right from currentpos (unplayed)
+    bar_dark = pygame.Color("#222222")                  # lower part of scrubbar for start / end position of render section
+    wave = pygame.Color("#E7E7E7")                      # color for soundwave
+    text = pygame.Color("#EEEEEE")                      # all text has the same color
+    text_selection = pygame.Color("#BF7F0F")            # selection of textfield as "background color"
+    text_background = pygame.Color("#5A149C")           # background for textfield, only used for current, start and end pos controls
+    checkbox_border = pygame.Color(100,100,100,100)     # border color for checkbox
+    checkbox_checkmark = pygame.Color("white")          # color of the checkmark
+
 
 @dataclass
 class Paths:
-    images = Path("./tmp/images")
-    tmp_audio = Path("./tmp/audio/faded_audio.wav")
-    video_output = Path("./tmp/output")
+    images = Path("./tmp/images")                   # temporary images to be stiched together by ffmpeg
+    tmp_audio = Path("./tmp/audio/faded_audio.wav") # temporary audio file that has start and end faded
+    video_output = Path("./tmp/output")             # output folder of the rendered videos
+
 
 @dataclass
 class Fonts:
-    font_path = Path("./assets/AgaveNerdFontMono-Regular.ttf")
-    small = pygame.Font(font_path, 12)
-    medium = pygame.Font(font_path, 20)
-    large = pygame.Font(font_path, 30)
-    custom = lambda x:pygame.Font(Fonts.font_path, x)
+    font_path = Path("./assets/AgaveNerdFontMono-Regular.ttf")  # font path...
+    small = pygame.Font(font_path, 12)                          # unused
+    medium = pygame.Font(font_path, 20)                         # unused i think
+    large = pygame.Font(font_path, 30)                          # also unused i think
+    custom = lambda x:pygame.Font(Fonts.font_path, x)           # used for probably everything...
 
 
 @dataclass
 class Sizes:
     window = 405, 900           # preview window size
-    window_max_size = 900
-    window_max_ratio = 0.35
+    preview_fps = 60            # limit to 60 fps
+    window_max_size = 900       # set preview window to constant size depending on render size
+    window_max_ratio = 0.35     # max screen ratio
     window_render = 1080, 2400  # render window size
     blur_radius = 10            # gaussian image blur radius
     background_fade = 0.2       # factor of element height
@@ -62,25 +65,25 @@ class Sizes:
     meta_tag_margin = 4         # amount of pixels arround textfield for fading
     clipper_svg = 0.2           # ratio of svg size (square) / soundwave_surface height
 
+
 @dataclass
 class SVGs:
-    clip = lambda x:pygame.image.load_sized_svg("./assets/clipping.svg", (x,x))
+    clip = lambda x:pygame.image.load_sized_svg("./assets/clipping.svg", (x,x)) # made this a seperate class in case i add more images/svgs
+
 
 @dataclass
 class AllowedFileTypes:
-    audio = {".mp3", ".wav", ".flac", ".opus"}
-    image = {".bmp", ".gif", ".jpeg", ".jpg", ".png"}
+    audio = {".mp3", ".wav", ".flac", ".opus"}          # only these really work with pygame.mixer_music without too much hassle
+    image = {".bmp", ".gif", ".jpeg", ".jpg", ".png"}   # used to load cover art seperately
 
-@dataclass
-class PositionsConst:
-    clipper = pygame.Vector2(5,5)
 
 class Positions(TypedDict):
-    soundwave: pygame.Rect
-    eqalizer: pygame.Rect
-    scrubbar: pygame.Rect
-    current_time_textfield: pygame.Vector2
+    soundwave: pygame.Rect                  # soundwave.__init__ wants a rect
+    eqalizer: pygame.Rect                   # equalizer.__init__ wants a rect
+    scrubbar: pygame.Rect                   # scrubbar.__init__ wants a Rect
+    current_time_textfield: pygame.Vector2  # any textfield takes tuple[int,int] or Vector2
     start_fade_textfield: pygame.Vector2
     end_fade_textfield: pygame.Vector2
-    clipper_checkbox: pygame.Rect
     resolution_textfield: pygame.Vector2
+    clipper_checkbox: pygame.Rect           # checkboxes take a rect
+
