@@ -46,7 +46,7 @@ def convert_cover(cover:Path|bytes|str|None, size:tuple[int,int]):
     elif cover is None:
         surface = pygame.Surface(size)
         surface.fill(Colors.background)
-        txt_surface = Fonts.large.render("No cover", True, Colors.text, Colors.background)
+        txt_surface = Fonts.custom(max(size)//20).render("No cover", True, Colors.text, Colors.background)
         x = (size[0] - txt_surface.width) // 2
         y = (size[1] - txt_surface.height) // 2
         surface.blit(txt_surface, (x,y))
