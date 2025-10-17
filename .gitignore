@@ -5,3 +5,6 @@ tmp
 pyproject.toml
 uv.lock
 scripts/ntimer.py
+build
+dist
+main.spec
