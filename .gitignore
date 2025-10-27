@@ -1,9 +1,17 @@
+# python files
 __pycache__
-.venv
-tmp
-.python-version
+
+# environments
+*venv
+
+# uv files
 pyproject.toml
-uv.lock
-build
-dist
 main.spec
+uv.lock
+
+# pyinstaller
+dist
+build
+
+# specific
+tmp
